@@ -17,6 +17,9 @@ NoShippingRequired = get_class('shipping.methods', 'NoShippingRequired')
 
 class ShippingSerializer(serializers.Serializer, CheckoutSessionMixin,
                          GetShippingMixin):
+    """
+    Shipping serializers to get shipping charge and shipping method
+    """
     basket = serializers.HyperlinkedRelatedField(
         view_name='basket-detail', queryset=Basket.objects)
     shipping_address = ShippingAddressSerializer(many=False, required=True)
@@ -26,18 +29,25 @@ class ShippingSerializer(serializers.Serializer, CheckoutSessionMixin,
     def validate(self, attrs):
         self.request = self.context['request']
         basket = prepare_basket(attrs.get('basket'), self.request)
+
         if basket.is_empty:
             raise serializers.ValidationError(_('Basket is empty'))
+
+        # try get shipping method by CheckoutSessionMixin.get_shipping_method
         self._set_new_address(basket, attrs.get('shipping_address'))
         shipping_address = self.get_shipping_address(basket)
         shipping_method = self.get_shipping_method(
             basket, shipping_address)
+
+        # if not required method from CheckoutSessionMixin, set shipping method
+        # by shipping method code and shipping address
         if shipping_method is None:
             shipping_method = self._shipping_method(
                 self.request, basket,
                 attrs.get('shipping_method_code'),
                 shipping_address
             )
+
         shipping_charge = shipping_method.calculate(basket)
         return {
             'basket_url': self.init_data['basket'],

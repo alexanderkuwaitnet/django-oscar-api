@@ -81,14 +81,12 @@ class TotalView(BasketPermissionMixin, views.APIView):
     returns the order total.
     """
     def post(self, request, format=None):
-        # TODO: Make it possible to create orders with options.
-        # at the moment, no options are passed to this method, which means they
-        # are also not created.
 
         data_basket = self.get_data_basket(request.DATA, format)
         basket = self.check_basket_permission(request,
                                               basket_pk=data_basket.pk)
 
+        # validation use  from checkout views
         # by now an error should have been raised if someone was messing
         # around with the basket, so asume invariant
         assert(data_basket == basket)

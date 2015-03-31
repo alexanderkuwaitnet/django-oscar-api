@@ -117,8 +117,11 @@ def get_session(session_id, raise_on_create=False):
 
 
 class GetShippingMixin(object):
-
+    """
+    Methods for calculating shipping
+    """
     def _shipping_method(self, request, basket, shipping_method_code, shipping_address):
+        # Calculating shipping method, using some code from branch checkout
         repository = Repository()
 
         if not request.basket.is_shipping_required():
@@ -128,16 +131,17 @@ class GetShippingMixin(object):
             return NoShippingRequired()
 
         if not self.checkout_session.is_shipping_address_set():
-            raise serializers.ValidationError(request, _("Please choose a shipping address"))
+            raise serializers.ValidationError(
+                request, _("Please choose a shipping address"))
 
         methods = repository.get_shipping_methods(
-                basket=basket,
-                user=request.user,
-                request=request,
-                shipping_addr=shipping_address
-            )
-        if shipping_method_code is not None:
+            basket=basket,
+            user=request.user,
+            request=request,
+            shipping_addr=shipping_address
+        )
 
+        if shipping_method_code is not None:
             shipping_methods = (method for method in methods if method.code == shipping_method_code)
         else:
             shipping_methods = methods
@@ -151,6 +155,7 @@ class GetShippingMixin(object):
         return method
 
     def _set_new_address(self, basket, address):
+        # set new addresses
         self.checkout_session = CheckoutSessionData(self.request)
         address_fields = dict(
             (k, v) for (k, v) in address.__dict__.items()

@@ -114,6 +114,9 @@ class OrderSerializer(OscarModelSerializer):
 # charges.
 class CheckoutSerializer(serializers.Serializer, OrderPlacementMixin,
                          GetShippingMixin):
+    """
+    Serializer for validation and confirm checkout
+    """
     basket = serializers.HyperlinkedRelatedField(
         view_name='basket-detail', queryset=Basket.objects)
     total = PriceSerializer(many=False, required=True)
@@ -126,8 +129,11 @@ class CheckoutSerializer(serializers.Serializer, OrderPlacementMixin,
     def validate(self, attrs):
         self.request = self.context['request']
         basket = prepare_basket(attrs.get('basket'), self.request)
+
         if basket.is_empty:
             raise serializers.ValidationError(_('Basket is empty'))
+
+        # calculating shipping address and shipping charge for validation
         self._set_new_address(basket, attrs.get('shipping_address'))
         shipping_address = self.get_shipping_address(basket)
         shipping_method = self.get_shipping_method(
@@ -150,8 +156,12 @@ class CheckoutSerializer(serializers.Serializer, OrderPlacementMixin,
             shipping_charge = shipping_method.calculate(basket)
             total = self.get_order_totals(
                 basket, shipping_charge=shipping_charge)
+
+        # validate shipping charge
         if shipping_charge.incl_tax != attrs.get('shipping_charge').incl_tax:
             raise serializers.ValidationError(_('Invalid shipping charge'))
+
+        # validate total charge
         if total.incl_tax != attrs.get('total').incl_tax:
             raise serializers.ValidationError(_('Invalid order total'))
 
@@ -185,6 +195,9 @@ class CheckoutSerializer(serializers.Serializer, OrderPlacementMixin,
 
 
 class TotalChargeSerializer(serializers.Serializer, OrderPlacementMixin):
+    """
+    Serializer for calculating total charge for checkout
+    """
     basket = serializers.HyperlinkedRelatedField(
         view_name='basket-detail', queryset=Basket.objects)
     shipping_charge = PriceSerializer(many=False, required=True)
@@ -192,10 +205,12 @@ class TotalChargeSerializer(serializers.Serializer, OrderPlacementMixin):
     def validate(self, attrs):
         self.request = self.context['request']
         basket = prepare_basket(attrs.get('basket'), self.request)
+
         if basket.is_empty:
             raise serializers.ValidationError(_('Basket is empty'))
+
         total = self.get_order_totals(
-                basket, shipping_charge=attrs.get('shipping_charge'))
+            basket, shipping_charge=attrs.get('shipping_charge'))
 
         return {
             'basket_url': self.init_data['basket'],

@@ -17,8 +17,8 @@ class ShippingTest(APITest):
         'stockrecord', 'partner', 'orderanditemcharges', 'country'
     ]
 
-    def test_checkout(self):
-        "Test if an order can be placed as an authenticated user with session based auth."
+    def test_shipping(self):
+        "Test if an shipping calculating as an authenticated user with session based auth."
         self.login(username='nobody', password='nobody')
         response = self.get('api-basket')
         self.assertTrue(response.status_code, 200)
@@ -44,7 +44,9 @@ class ShippingTest(APITest):
         }
         response = self.post('api-shipping', **request)
         self.assertEqual(response.status_code, 406)
-        response = self.post('api-basket-add-product', url="http://testserver/api/products/1/", quantity=5)
+        response = self.post(
+            'api-basket-add-product', url="http://testserver/api/products/1/",
+            quantity=5)
         self.assertEqual(response.status_code, 200)
         response = self.post('api-shipping', **request)
 
